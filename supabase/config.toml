@@ -1,0 +1,4 @@
+project_id = "qjbtdxbiejnkdtwajqll"
+
+[functions.generate-bhabin]
+verify_jwt = false

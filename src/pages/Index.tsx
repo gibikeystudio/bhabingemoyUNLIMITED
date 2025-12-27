@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Zap } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import OptionButton from "@/components/OptionButton";
 import DropZone from "@/components/DropZone";
 import LoadingState from "@/components/LoadingState";
@@ -50,76 +51,44 @@ const Index = () => {
     setModalOpen(true);
   };
 
-  const fetchWithRetry = async (url: string, options: RequestInit, retries = 5) => {
-    let backoff = 1000;
-    for (let i = 0; i < retries; i++) {
-      try {
-        const response = await fetch(url, options);
-        if (response.ok) return await response.json();
-        if (response.status === 429 || response.status >= 500) {
-          await new Promise(r => setTimeout(r, backoff));
-          backoff *= 2;
-          continue;
-        }
-        const errData = await response.json();
-        throw new Error(errData.error?.message || "Kesalahan Jaringan");
-      } catch (err) {
-        if (i === retries - 1) throw err;
-        await new Promise(r => setTimeout(r, backoff));
-        backoff *= 2;
-      }
-    }
-  };
-
   const handleGenerate = async () => {
     if (!imagePreview) {
       showModal("Izin Dan, fotonya belum diupload. Masa mau generate foto kosong? Hehe..");
       return;
     }
 
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-    if (!apiKey) {
-      showModal("API Key Gemini belum dikonfigurasi. Hubungi admin untuk setup.");
-      return;
-    }
-
-    const base64Data = imagePreview.split(',')[1];
     setIsLoading(true);
     setResultImage(null);
 
-    const posture = ["ruang tamu", "teras rumah", "pos kamling", "kantor desa", "warung kopi"].some(s => selectedScene.includes(s))
-      ? "sitting together friendly"
-      : "standing together naturally";
-
-    const prompt = `8K PHOTOREALISTIC DOCUMENTARY. An Indonesian Bhabinkamtibmas police officer with identical face and uniform from the source image. The officer is ${posture} with a local villager who wears a ${selectedColor} shirt. Location: ${selectedScene}. Professional DSLR photography, natural lighting, sharp details, warm community atmosphere.`;
-
     try {
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${apiKey}`;
-
-      const data = await fetchWithRetry(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              { text: prompt },
-              { inlineData: { mimeType: "image/png", data: base64Data } }
-            ]
-          }],
-          generationConfig: { responseModalities: ['IMAGE'] }
-        })
+      const { data, error } = await supabase.functions.invoke('generate-bhabin', {
+        body: {
+          imageBase64: imagePreview,
+          scene: selectedScene,
+          color: selectedColor
+        }
       });
 
-      const outputImage = data?.candidates?.[0]?.content?.parts?.find((p: any) => p.inlineData)?.inlineData?.data;
+      if (error) {
+        console.error("Edge function error:", error);
+        showModal("Lapor! Terjadi gangguan: " + error.message);
+        return;
+      }
 
-      if (outputImage) {
-        setResultImage(`data:image/png;base64,${outputImage}`);
+      if (data.error) {
+        showModal(data.error);
+        return;
+      }
+
+      if (data.success && data.image) {
+        setResultImage(data.image);
         toast.success("Foto berhasil dibuat!");
       } else {
-        throw new Error("Waduh, servernya lagi malu-malu. Coba lagi ya!");
+        showModal("Waduh, servernya lagi malu-malu. Coba lagi ya!");
       }
     } catch (err: any) {
-      showModal("Lapor! Terjadi gangguan: " + err.message);
+      console.error("Error:", err);
+      showModal("Lapor! Terjadi gangguan: " + (err.message || "Unknown error"));
     } finally {
       setIsLoading(false);
     }
