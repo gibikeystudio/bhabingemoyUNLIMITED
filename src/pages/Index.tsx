@@ -12,17 +12,17 @@ import "@fontsource/fredoka/600.css";
 import "@fontsource/fredoka/700.css";
 
 const SCENES = [
-  { value: "halaman rumah warga asri", label: "Halaman Warga" },
-  { value: "teras rumah warga desa", label: "Teras Santai" },
-  { value: "ruang tamu warga", label: "Namu di Dalam" },
-  { value: "pos kamling desa", label: "Ngopi di Pos" },
-  { value: "sawah padi hijau", label: "Cek Sawah" },
-  { value: "kantor desa", label: "Apel Balai Desa" },
-  { value: "warung kopi sederhana", label: "Warung Kopi" },
-  { value: "masjid atau mushola", label: "Tempat Ibadah" },
-  { value: "lapangan sepak bola desa", label: "Lapangan Desa" },
-  { value: "pasar tradisional ramai", label: "Pasar Rakyat" },
+  { value: "halaman depan rumah warga yang asri dengan tanaman hijau", label: "Halaman Depan" },
+  { value: "teras rumah warga desa yang teduh dan nyaman", label: "Teras Rumah" },
+  { value: "ruang tamu rumah warga yang sederhana dan rapi", label: "Ruang Tamu" },
+  { value: "samping rumah warga dengan pekarangan", label: "Samping Rumah" },
+  { value: "halaman belakang rumah warga yang luas", label: "Halaman Belakang" },
+  { value: "beranda rumah warga dengan kursi kayu", label: "Beranda Rumah" },
+  { value: "garasi atau carport rumah warga", label: "Depan Garasi" },
+  { value: "taman kecil di depan rumah warga", label: "Taman Rumah" },
 ];
+
+const VILLAGER_COUNTS = [1, 2, 3, 4, 5];
 
 const COLORS = [
   { value: "red", label: "Merah" },
@@ -39,8 +39,9 @@ const COLORS = [
 
 const Index = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [selectedScene, setSelectedScene] = useState("halaman rumah warga asri");
+  const [selectedScene, setSelectedScene] = useState("halaman depan rumah warga yang asri dengan tanaman hijau");
   const [selectedColor, setSelectedColor] = useState("red");
+  const [villagerCount, setVillagerCount] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [resultImage, setResultImage] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -65,7 +66,8 @@ const Index = () => {
         body: {
           imageBase64: imagePreview,
           scene: selectedScene,
-          color: selectedColor
+          color: selectedColor,
+          villagerCount
         }
       });
 
@@ -97,8 +99,9 @@ const Index = () => {
   const handleReset = () => {
     setImagePreview(null);
     setResultImage(null);
-    setSelectedScene("halaman rumah warga asri");
+    setSelectedScene("halaman depan rumah warga yang asri dengan tanaman hijau");
     setSelectedColor("red");
+    setVillagerCount(1);
   };
 
   return (
@@ -148,12 +151,33 @@ const Index = () => {
             </div>
           </div>
 
-          {/* 3. Color Section */}
-          <div className="mb-10">
+          {/* 3. Villager Count */}
+          <div className="mb-8">
             <label className="flex items-center gap-2 text-sm font-bold mb-4 text-primary uppercase">
               <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-[10px]">3</span>
+              Berapa Jumlah Warganya?
+            </label>
+            <div className="grid grid-cols-5 gap-3">
+              {VILLAGER_COUNTS.map((count) => (
+                <OptionButton
+                  key={count}
+                  label={`${count} Orang`}
+                  value={String(count)}
+                  isActive={villagerCount === count}
+                  onClick={(val) => setVillagerCount(Number(val))}
+                  className="p-3 text-[10px]"
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* 4. Color Section */}
+          <div className="mb-10">
+            <label className="flex items-center gap-2 text-sm font-bold mb-4 text-primary uppercase">
+              <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-[10px]">4</span>
               Warganya Pakai Baju Apa?
             </label>
+            <p className="text-[10px] text-muted-foreground mb-3">* 1 warga pakai warna pilihan, sisanya random</p>
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
               {COLORS.map((color) => (
                 <OptionButton

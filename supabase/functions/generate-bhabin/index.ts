@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { imageBase64, scene, color } = await req.json();
+    const { imageBase64, scene, color, villagerCount = 1 } = await req.json();
 
     if (!imageBase64) {
       console.error("No image provided");
@@ -31,16 +31,22 @@ serve(async (req) => {
       );
     }
 
-    // Determine posture based on scene
-    const indoorScenes = ["ruang tamu", "teras rumah", "pos kamling", "kantor desa", "warung kopi"];
-    const posture = indoorScenes.some(s => scene.includes(s))
-      ? "sitting together friendly"
-      : "standing together naturally";
+    // Build villager description
+    const randomColors = ["red", "blue", "green", "white", "yellow", "black", "orange", "purple", "brown", "pink"];
+    let villagerDesc = "";
+    if (villagerCount === 1) {
+      villagerDesc = `one local villager wearing a ${color} shirt`;
+    } else {
+      const otherColors = randomColors.filter(c => c !== color);
+      const shuffled = otherColors.sort(() => Math.random() - 0.5);
+      const others = shuffled.slice(0, villagerCount - 1).map(c => `${c} shirt`).join(", ");
+      villagerDesc = `${villagerCount} local villagers together. One villager wears a ${color} shirt, the others wear ${others}`;
+    }
 
-    const prompt = `8K PHOTOREALISTIC DOCUMENTARY. An Indonesian Bhabinkamtibmas police officer with identical face and uniform from the source image. The officer is ${posture} with a local villager who wears a ${color} shirt. Location: ${scene}. Professional DSLR photography, natural lighting, sharp details, warm community atmosphere.`;
+    const prompt = `8K PHOTOREALISTIC DOCUMENTARY PHOTO. An Indonesian Bhabinkamtibmas police officer (with the EXACT same face and uniform from the source image) is actively interacting and talking with ${villagerDesc} at ${scene}. The officer is delivering kamtibmas community safety messages, gesturing naturally while speaking. The villagers are listening attentively and engaged in conversation. Shot like a real documentation photo with natural lighting, warm community atmosphere, genuine human interaction. Professional DSLR photography, sharp details, candid documentary style.`;
 
     console.log("Generating image with prompt:", prompt);
-    console.log("Scene:", scene, "Color:", color);
+    console.log("Scene:", scene, "Color:", color, "Villagers:", villagerCount);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
